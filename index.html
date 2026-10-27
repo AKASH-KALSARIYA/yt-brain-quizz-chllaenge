@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Brain Quiz Challenge — a quick, fun general knowledge quiz game.">
+<title>Brain Quiz Challenge</title>
+<style>
+:root{--bg:#101426;--panel:#191f38;--panel2:#222a49;--text:#f5f7ff;--muted:#aeb8d7;--accent:#7c8cff;--good:#37d6a2;--bad:#ff7185}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#252f5c 0,#101426 55%);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text);display:flex;align-items:center;justify-content:center;padding:18px}
+.app{width:min(100%,680px)}
+header{text-align:center;margin-bottom:20px}
+.logo{font-size:42px;margin-bottom:4px}
+h1{margin:0;font-size:clamp(1.8rem,5vw,2.5rem);letter-spacing:-.04em}
+.subtitle{margin:8px 0 0;color:var(--muted)}
+.card{background:rgba(25,31,56,.96);border:1px solid #343d65;border-radius:24px;padding:clamp(18px,4vw,30px);box-shadow:0 22px 70px #0005}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pill{background:var(--panel2);padding:8px 12px;border-radius:999px;font-size:.9rem;color:#dfe4ff}
+.progress{height:8px;background:#303858;border-radius:20px;overflow:hidden;margin:18px 0 24px}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#b38cff);transition:width .25s}
+.question{font-size:clamp(1.2rem,3.5vw,1.65rem);line-height:1.35;margin:0 0 22px}
+.answers{display:grid;gap:12px}
+.answer{width:100%;text-align:left;border:1px solid #3a446b;background:#202744;color:var(--text);border-radius:14px;padding:15px 16px;font-size:1rem;cursor:pointer;transition:transform .12s,border-color .12s,background .12s}
+.answer:hover:not(:disabled){transform:translateY(-1px);border-color:var(--accent);background:#293255}
+.answer:focus-visible,button:focus-visible{outline:3px solid #c1c8ff;outline-offset:3px}
+.answer.correct{border-color:var(--good);background:#123e3a}
+.answer.wrong{border-color:var(--bad);background:#4a2638}
+.answer:disabled{cursor:default}
+.feedback{min-height:28px;margin:14px 0 0;color:var(--muted)}
+.actions{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:18px}
+button.primary{border:0;background:var(--accent);color:#101426;font-weight:800;border-radius:12px;padding:12px 18px;font-size:1rem;cursor:pointer}
+button.primary:hover{filter:brightness(1.08)}
+button.secondary{border:1px solid #48527b;background:transparent;color:var(--text);border-radius:12px;padding:11px 15px;font-size:.95rem;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+.screen{text-align:center;padding:12px 0}
+.screen h2{font-size:2rem;margin:8px 0}
+.screen p{color:var(--muted);line-height:1.6}
+.big-score{font-size:3.6rem;font-weight:900;color:#c1c8ff;margin:12px 0}
+.hidden{display:none!important}
+footer{text-align:center;color:#8590b7;font-size:.8rem;margin-top:16px}
+@media(max-width:420px){body{padding:12px}.card{border-radius:18px}.actions{align-items:stretch}.actions button{flex:1}}
+</style>
+</head>
+<body>
+<main class="app">
+<header>
+  <div class="logo" aria-hidden="true">🧠</div>
+  <h1>Brain Quiz Challenge</h1>
+  <p class="subtitle">Think fast. Learn something. Beat your best score.</p>
+</header>
+<section class="card" id="start-screen">
+  <div class="screen">
+    <div style="font-size:3rem" aria-hidden="true">⚡</div>
+    <h2>Ready to challenge your brain?</h2>
+    <p>Answer 10 multiple-choice questions. You have 20 seconds per question. Correct answers earn 100 points, with a speed bonus for quick thinking.</p>
+    <button class="primary" id="start-btn">Start Quiz</button>
+  </div>
+</section>
+<section class="card hidden" id="quiz-screen" aria-live="polite">
+  <div class="row">
+    <span class="pill" id="question-count">Question 1 / 10</span>
+    <span class="pill">⭐ Score: <strong id="score">0</strong></span>
+    <span class="pill">⏱️ <strong id="timer">20</strong>s</span>
+  </div>
+  <div class="progress" aria-label="Quiz progress"><div class="progress-fill" id="progress-fill"></div></div>
+  <h2 class="question" id="question-text"></h2>
+  <div class="answers" id="answers"></div>
+  <p class="feedback" id="feedback" role="status"></p>
+  <div class="actions">
+    <button class="secondary" id="quit-btn">Quit</button>
+    <button class="primary" id="next-btn" disabled>Next Question →</button>
+  </div>
+</section>
+<section class="card hidden" id="result-screen">
+  <div class="screen">
+    <div style="font-size:3rem" id="result-icon" aria-hidden="true">🏆</div>
+    <h2 id="result-title">Quiz complete!</h2>
+    <p>Your final score</p>
+    <div class="big-score" id="final-score">0</div>
+    <p id="result-message"></p>
+    <button class="primary" id="play-again-btn">Play Again</button>
+  </div>
+</section>
+<footer>Brain Quiz Challenge · Made for fun and learning</footer>
+</main>
+<script>
+const questionBank = [
+ {q:"Which planet is known as the Red Planet?",a:["Venus","Mars","Jupiter","Mercury"],correct:1,why:"Mars looks reddish because of iron oxide on its surface."},
+ {q:"How many sides does a hexagon have?",a:["Five","Six","Seven","Eight"],correct:1,why:"A hexagon has six sides."},
+ {q:"Which ocean is the largest on Earth?",a:["Atlantic Ocean","Indian Ocean","Arctic Ocean","Pacific Ocean"],correct:3,why:"The Pacific Ocean is the largest and deepest ocean."},
+ {q:"What is the chemical symbol for gold?",a:["Ag","Gd","Au","Go"],correct:2,why:"Au comes from the Latin word aurum."},
+ {q:"Which animal is the fastest on land?",a:["Lion","Cheetah","Horse","Greyhound"],correct:1,why:"A cheetah can reach very high speeds in short bursts."},
+ {q:"How many minutes are there in two hours?",a:["60","90","120","180"],correct:2,why:"Two hours × 60 minutes = 120 minutes."},
+ {q:"Which language is primarily used to style web pages?",a:["HTML","CSS","SQL","Python"],correct:1,why:"CSS controls layout, colors, typography, and other visual styles."},
+ {q:"What is the closest star to Earth?",a:["Sirius","Polaris","The Sun","Proxima Centauri"],correct:2,why:"The Sun is our closest star."},
+ {q:"Which instrument measures temperature?",a:["Barometer","Thermometer","Compass","Altimeter"],correct:1,why:"A thermometer measures temperature."},
+ {q:"What is 12 × 8?",a:["86","92","96","108"],correct:2,why:"12 multiplied by 8 equals 96."},
+ {q:"Which gas do plants absorb from the atmosphere?",a:["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"],correct:2,why:"Plants use carbon dioxide during photosynthesis."},
+ {q:"Which is the largest mammal in the world?",a:["African elephant","Blue whale","Giraffe","Orca"],correct:1,why:"The blue whale is the largest known animal."},
+ {q:"What does CPU stand for in computing?",a:["Central Processing Unit","Computer Power Utility","Core Program Upload","Central Program User"],correct:0,why:"CPU stands for Central Processing Unit."},
+ {q:"How many colors are traditionally named in a rainbow?",a:["Five","Six","Seven","Eight"],correct:2,why:"The traditional count is seven colors."},
+ {q:"Which shape has three sides?",a:["Square","Triangle","Pentagon","Circle"],correct:1,why:"A triangle has three sides."}
+];
+const $ = id => document.getElementById(id);
+const startScreen=$("start-screen"), quizScreen=$("quiz-screen"), resultScreen=$("result-screen");
+let questions=[], index=0, score=0, timeLeft=20, timerId=null, answered=false;
+function shuffle(items){const a=[...items];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function showScreen(screen){[startScreen,quizScreen,resultScreen].forEach(s=>s.classList.add("hidden"));screen.classList.remove("hidden");}
+function startGame(){clearInterval(timerId);questions=shuffle(questionBank).slice(0,10);index=0;score=0;$("score").textContent=score;showScreen(quizScreen);renderQuestion();}
+function renderQuestion(){
+ answered=false;timeLeft=20;$("timer").textContent=timeLeft;$("feedback").textContent="";$("next-btn").disabled=true;
+ const item=questions[index];$("question-count").textContent=`Question ${index+1} / ${questions.length}`;
+ $("progress-fill").style.width=`${(index/questions.length)*100}%`;$("question-text").textContent=item.q;
+ const area=$("answers");area.replaceChildren();
+ item.a.forEach((answer,i)=>{const btn=document.createElement("button");btn.className="answer";btn.textContent=`${String.fromCharCode(65+i)}. ${answer}`;btn.addEventListener("click",()=>chooseAnswer(i,btn));area.appendChild(btn);});
+ clearInterval(timerId);timerId=setInterval(()=>{timeLeft--;$("timer").textContent=timeLeft;if(timeLeft<=0){clearInterval(timerId);if(!answered)timeUp();}},1000);
+}
+function chooseAnswer(choice,button){
+ if(answered)return;answered=true;clearInterval(timerId);const item=questions[index];const buttons=[...$("answers").children];buttons.forEach(b=>b.disabled=true);
+ if(choice===item.correct){const bonus=timeLeft*5;score+=100+bonus;$("score").textContent=score;button.classList.add("correct");$("feedback").textContent=`Correct! +${100+bonus} points. ${item.why}`;}
+ else{button.classList.add("wrong");buttons[item.correct].classList.add("correct");$("feedback").textContent=`Not quite. ${item.why}`;}
+ $("next-btn").disabled=false;$("next-btn").textContent=index===questions.length-1?"See Results →":"Next Question →";
+}
+function timeUp(){answered=true;const item=questions[index];const buttons=[...$("answers").children];buttons.forEach(b=>b.disabled=true);buttons[item.correct].classList.add("correct");$("feedback").textContent=`Time's up! ${item.why}`;$("next-btn").disabled=false;$("next-btn").textContent=index===questions.length-1?"See Results →":"Next Question →";}
+function nextQuestion(){if(!answered)return;index++;if(index>=questions.length){finishGame();return;}renderQuestion();}
+function finishGame(){clearInterval(timerId);$("progress-fill").style.width="100%";showScreen(resultScreen);$("final-score").textContent=score;const max=questions.length*200;let title,message,icon;if(score>=1400){title="Brilliant work!";message="Outstanding brain power. Can you beat this score?";icon="🏆";}else if(score>=900){title="Great job!";message="You know your stuff. Play again to improve your score.";icon="🌟";}else{title="Good effort!";message="Every round is a chance to learn. Give it another try!";icon="💪";}$("result-title").textContent=title;$("result-message").textContent=`You answered ${questions.length} questions and scored ${score} points. Maximum possible score is about ${max}. ${message}`;$("result-icon").textContent=icon;}
+function quitGame(){clearInterval(timerId);showScreen(startScreen);}
+$("start-btn").addEventListener("click",startGame);$("next-btn").addEventListener("click",nextQuestion);$("play-again-btn").addEventListener("click",startGame);$("quit-btn").addEventListener("click",quitGame);
+</script>
+</body>
+</html>
